@@ -81,7 +81,6 @@ def draw_board(screen, block_sprite, board):
     Draws the board using the sprite on the surface. """
     for y, row in enumerate(board):
       for x, cell in enumerate(row):
-            # TODO: block is global
             new_block = block_sprite.copy()
             new_block.fill(board[y][x], None, pygame.BLEND_MULT)
             screen.blit(new_block, [BLOCKSIZE*x + SCREEN_OFFSET_X,BLOCKSIZE*y + SCREEN_OFFSET_Y])
@@ -127,7 +126,7 @@ def remove_full_rows(state):
     board = state["board"]
 
     for i, row in enumerate(board):
-        if all([block > 0 for block in row]):
+        if all([block != (20, 20, 20) for block in row]):
             del board[i]
             board.insert(0, [(20,20,20) for _ in range(0, COLUMNS)])
 
