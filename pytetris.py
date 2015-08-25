@@ -91,19 +91,19 @@ def select_piece():
     return PIECES[random.randint(0, len(PIECES) - 1)]
 #    return PIECES[2]
 
-def draw_board(screen, board):
+def draw_board(screen, block_sprite, board):
     for y, row in enumerate(board):
       for x, cell in enumerate(row):
             # TODO: block is global
-            new_block = block.copy()
+            new_block = block_sprite.copy()
             new_block.fill(board[y][x], None, pygame.BLEND_MULT)
             screen.blit(new_block, [BLOCKSIZE*x + SCREEN_OFFSET_X,BLOCKSIZE*y + SCREEN_OFFSET_Y])
 
 
-def draw_piece(screen, piece, piece_position, player_rotation):
+def draw_piece(screen, block_sprite, piece, piece_position, player_rotation):
     for block_position in piece["rotations"][player_rotation]:
 
-        screen.blit(block,
+        screen.blit(block_sprite,
                             [BLOCKSIZE*(block_position[0]+piece_position[0]) + SCREEN_OFFSET_X,
                             (BLOCKSIZE*(block_position[1]+piece_position[1]) + SCREEN_OFFSET_Y)
                             ]
@@ -137,7 +137,7 @@ def try_drop_piece(state):
         remove_full_rows(state)
         spawn_piece(state, select_piece(), [5,0])
 
-def game_update(screen, state, dt):
+def game_update(state, dt):
 
     if not state["player_falling"]:
         state["total_time"] += dt
@@ -153,14 +153,16 @@ def game_update(screen, state, dt):
             try_drop_piece(state)
             state["falling_timer"] -= 0.1
 
+
+def game_draw(screen, block_sprite, state):
     screen.fill([0,0,0])
 
     player_position = state["player_position"]
     player_piece = state["player_piece"]
     player_rotation = state["player_rotation"]
 
-    draw_board(screen, state["board"])
-    draw_piece(screen, player_piece, player_position, player_rotation)
+    draw_board(screen, block_sprite, state["board"])
+    draw_piece(screen, block_sprite, player_piece, player_position, player_rotation)
 
     pygame.display.flip()
 
@@ -213,21 +215,19 @@ def game_handle_input(state):
                 state["player_falling"] = False
 
 def game_main():
-
+    # Initialize pygame
     pygame.init()
-
     screen = pygame.display.set_mode([640, 480])
 
+    # Textures
     block = pygame.image.load("Square.png")
-    #background_block = pygame.image.load("SquareGray.png")
 
+    # Time management
     total_time = 0
-
     dt = 0
 
-    
+    # Game state
     state = {
-
         "board": [[(20,20,20) for x in range(0, COLUMNS)] for y in range(0, ROWS)],
         "total_time": 0,
         "player_position": [5,0],
@@ -237,17 +237,14 @@ def game_main():
         "falling_timer": 0.0,
     }
 
-#    state["board"][9][19] = 1
-
+    # Game loop
     while 1:
         t = time.time()
         time.sleep(1/30)
         game_handle_input(state)
-        game_update(screen, state, dt)
+        game_update(state, dt)
+        game_draw(screen, block, state)
         dt = time.time() - t
-
-#for piece in PIECES:
-#    print(piece)
 
 if __name__ == "__main__":
     game_main()
