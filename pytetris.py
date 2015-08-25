@@ -1,12 +1,6 @@
 import sys, pygame, random
 import time
 
-pygame.init()
-
-screen = pygame.display.set_mode([640, 480])
-
-block = pygame.image.load("Square.png")
-background_block = pygame.image.load("SquareGray.png")
 
 #block.fill((0,220,0), None, pygame.BLEND_MULT)
 
@@ -219,6 +213,13 @@ def game_handle_input(state):
 
 def game_main():
 
+    pygame.init()
+
+    screen = pygame.display.set_mode([640, 480])
+
+    block = pygame.image.load("Square.png")
+    background_block = pygame.image.load("SquareGray.png")
+
     total_time = 0
 
     dt = 0
@@ -246,4 +247,5 @@ def game_main():
 #for piece in PIECES:
 #    print(piece)
 
-game_main()
+if __name__ == "__main__":
+    game_main()
