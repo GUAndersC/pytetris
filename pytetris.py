@@ -8,11 +8,16 @@ screen = pygame.display.set_mode([640, 480])
 block = pygame.image.load("Square.png")
 background_block = pygame.image.load("SquareGray.png")
 
+#block.fill((0,220,0), None, pygame.BLEND_MULT)
+
+#tint = pygame.Surface((16,16))
+#tint.fill((0,50,0), pygame.BLEND_ADD)
+
 #rect = block.get_rect()
 
 #block = pygame.Surface((16,16))
 
-#block.fill((255,0,255))
+#block.fill((255,0,255), None, pygame.BLEND_ADD)
 
 BLOCKSIZE = 16
 
@@ -25,48 +30,68 @@ colsize = 480 / 16
 ROWS = 20
 COLUMNS = 10
 
-PIECES = (
+PIECES = [
 
-            #I
-            (
-                ((-1,0), (0,0), (1,0), (2,0)),
-                ((0,-2), (0,-1), (0,0), (0,1)),
-            ),
+        #T
+        {
+            "color": (0,220, 0),
+            "rotations": (
+                            ((-1,0), (0,0), (1,0), (2,0)),
+                            ((0,-2), (0,-1), (0,0), (0,1)),
+                        )
+        },
 
-            #T
-            (
-                ((0,0), (1,0), (-1,0), (0,1)),
-                ((0,0), (0,1), (0,-1), (-1,0)),
-                ((0,0), (-1,0), (1,0), (0,-1)),
-                ((0,0), (0,-1), (0,1), (1,0)),
-            ),
+        #L1
+        {
+            "color": (220, 0, 0),
+            "rotations": (
+                            ((-1,0), (0,0), (1,0), (-1,1)),
+                            ((-1,-1), (0,-1), (0,0), (0,1)),
+                            ((1,-1), (-1,0), (0,0), (1,0)),
+                            ((0,-1), (0,0), (0,1), (1,1)),
+                        ),
+        },
 
-            #L1
-            (
-                ((-1,0), (0,0), (1,0), (-1,1)),
-                ((-1,-1), (0,-1), (0,0), (0,1)),
-                ((1,-1), (-1,0), (0,0), (1,0)),
-                ((0,-1), (0,0), (0,1), (1,1)),
-            ),
+        #L2
+    #    {
+    #        "color": (220, 0, 0),
+    #        "rotations": (
+    #                        ((-1,0), (0,0), (1,0), (-1,1)),
+    #                        ((-1,-1), (0,-1), (0,0), (0,1)),
+    #                        ((1,-1), (-1,0), (0,0), (1,0)),
+    #                        ((0,-1), (0,0), (0,1), (1,1)),
+    #                    ),
+    #    },
 
-            #S1
-            (
-                ((0,-1), (1,-1), (-1,0), (0,0)),
-                ((0,-1), (0,0), (1,0), (1,1)),
-            ),
 
-            #S2
-            (
-                ((-1,-1), (0,-1), (0,0), (1,0)),
-                ((1,-1), (0,0),(1,0),(0,1)),
-            ),
+        #S1
+        {
+            "color": (220, 0, 0),
+            "rotations": (
+                            ((0,-1), (1,-1), (-1,0), (0,0)),
+                            ((0,-1), (0,0), (1,0), (1,1)),
+                        ),
+        },
 
-            #Square
-            (
-                ((0,0), (1,0), (0,1), (1,1)),
-                ((0,0), (1,0), (0,1), (1,1)),
-            ),
-        )
+        #S2
+        {
+            "color": (220, 0, 0),
+            "rotations": (
+                            ((-1,-1), (0,-1), (0,0), (1,0)),
+                            ((1,-1), (0,0),(1,0),(0,1)),
+                        ),
+        },
+
+        #Square
+        {
+            "color": (220, 0, 0),
+            "rotations": (
+                            ((0,0), (1,0), (0,1), (1,1)),
+                            ((0,0), (1,0), (0,1), (1,1)),
+                        ),
+        },
+
+    ]
 
 def select_piece():
     return PIECES[random.randint(0, len(PIECES) - 1)]
@@ -75,15 +100,14 @@ def select_piece():
 def draw_board(board):
     for y, row in enumerate(board):
       for x, cell in enumerate(row):
-        if cell:
-            screen.blit(block, [BLOCKSIZE*x + SCREEN_OFFSET_X,BLOCKSIZE*y + SCREEN_OFFSET_Y])
-        else:
-            screen.blit(background_block, [BLOCKSIZE*x + SCREEN_OFFSET_X, BLOCKSIZE*y + SCREEN_OFFSET_Y])
+            new_block = block.copy()
+            new_block.fill(board[y][x], None, pygame.BLEND_MULT)
+            screen.blit(new_block, [BLOCKSIZE*x + SCREEN_OFFSET_X,BLOCKSIZE*y + SCREEN_OFFSET_Y])
 
 
+def draw_piece(piece, piece_position, player_rotation):
+    for block_position in piece["rotations"][player_rotation]:
 
-def draw_piece(piece, piece_position):
-    for block_position in piece:
         screen.blit(block,
                             [BLOCKSIZE*(block_position[0]+piece_position[0]) + SCREEN_OFFSET_X,
                             (BLOCKSIZE*(block_position[1]+piece_position[1]) + SCREEN_OFFSET_Y)
@@ -98,8 +122,8 @@ def spawn_piece(state, piece, position):
 
 def add_blocks_to_board(board, position, rotation, piece):
 
-    for block in piece[rotation]:
-        board[position[1]+block[1]][position[0]+block[0]] = 1
+    for block in piece["rotations"][rotation]:
+        board[position[1]+block[1]][position[0]+block[0]] = piece["color"]
 
 def remove_full_rows(state):
     board = state["board"]
@@ -141,14 +165,14 @@ def game_update(state, dt):
     player_rotation = state["player_rotation"]
 
     draw_board(state["board"])
-    draw_piece(player_piece[player_rotation], player_position)
+    draw_piece(player_piece, player_position, player_rotation)
 
     pygame.display.flip()
 
 
 def validate_move(board, position, rotation, piece):
 
-    for coord in piece[rotation]:
+    for coord in piece["rotations"][rotation]:
         x = coord[0] + position[0]
         y = coord[1] + position[1]
 
@@ -201,7 +225,7 @@ def game_main():
 
     state = {
 
-        "board": [[0 for x in range(0, COLUMNS)] for y in range(0, ROWS)],
+        "board": [[(20,20,20) for x in range(0, COLUMNS)] for y in range(0, ROWS)],
         "total_time": 0,
         "player_position": [5,0],
         "player_piece": select_piece(),
