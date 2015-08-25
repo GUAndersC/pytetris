@@ -1,4 +1,4 @@
-import sys, pygame
+import sys, pygame, random
 import time
 
 pygame.init()
@@ -25,18 +25,53 @@ colsize = 480 / 16
 ROWS = 20
 COLUMNS = 10
 
-piece_T = ((0,0), (1,0), (-1,0), (0,1))
-piece_L =   (
-                ((0,0), (-1,0), (1,0), (1,1)),
-                ((0,0), (0,-1), (0,1), (1,-1)),
-                ((0,0), (1,0), (-1,0), (1,1))
-            )
+PIECES = (
 
-piece_square =   (
+            #I
+            (
+                ((-1,0), (0,0), (1,0), (2,0)),
+                ((0,-2), (0,-1), (0,0), (0,1)),
+            ),
+
+            #T
+            (
+                ((0,0), (1,0), (-1,0), (0,1)),
+                ((0,0), (0,1), (0,-1), (-1,0)),
+                ((0,0), (-1,0), (1,0), (0,-1)),
+                ((0,0), (0,-1), (0,1), (1,0)),
+            ),
+
+            #L1
+            (
+                ((-1,0), (0,0), (1,0), (-1,1)),
+                ((-1,-1), (0,-1), (0,0), (0,1)),
+                ((1,-1), (-1,0), (0,0), (1,0)),
+                ((0,-1), (0,0), (0,1), (1,1)),
+            ),
+
+            #S1
+            (
+                ((0,-1), (1,-1), (-1,0), (0,0)),
+                ((0,-1), (0,0), (1,0), (1,1)),
+            ),
+
+            #S2
+            (
+                ((-1,-1), (0,-1), (0,0), (1,0)),
+                ((1,-1), (0,0),(1,0),(0,1)),
+            ),
+
+            #Square
+            (
                 ((0,0), (1,0), (0,1), (1,1)),
-#                ((0,0), (0,-1), (0,1), (1,-1)),
-#                ((0,0), (1,0), (-1,0), (1,1))
-            )
+                ((0,0), (1,0), (0,1), (1,1)),
+            ),
+        )
+
+def select_piece():
+    return PIECES[random.randint(0, len(PIECES) - 1)]
+#    return PIECES[2]
+
 def draw_board(board):
     for y, row in enumerate(board):
       for x, cell in enumerate(row):
@@ -74,22 +109,30 @@ def remove_full_rows(state):
             del board[i]
             board.insert(0, [0 for _ in range(0, COLUMNS)])
 
-def game_update(state):
+def try_drop_piece(state):
+    state["player_position"][1] += 1
 
-    state["total_time"] += state["dt"]
+    if not validate_move(state["board"], state["player_position"], state["player_rotation"], state["player_piece"]):
+        state["player_position"][1] -= 1
+        add_blocks_to_board(state["board"], state["player_position"], state["player_rotation"], state["player_piece"])
+        remove_full_rows(state)
+        spawn_piece(state, select_piece(), [5,0])
 
-    if state["total_time"] > 1.0:
-        state["player_position"][1] += 1
+def game_update(state, dt):
 
-        if not validate_move(state["board"], state["player_position"], state["player_rotation"], state["player_piece"]):
-            state["player_position"][1] -= 1
-            add_blocks_to_board(state["board"], state["player_position"], state["player_rotation"], state["player_piece"])
-            remove_full_rows(state)
-            spawn_piece(state, piece_square, [5,0])
+    if not state["player_falling"]:
+        state["total_time"] += dt
 
+
+    if state["total_time"] > 1.0 and state["player_falling"] == False:
+        try_drop_piece(state)
         state["total_time"] -= 1.0
 
-
+    if state["player_falling"]:
+        state["falling_timer"] += dt
+        if state["falling_timer"] > 0.1:
+            try_drop_piece(state)
+            state["falling_timer"] -= 0.1
 
     screen.fill([0,0,0])
 
@@ -131,8 +174,9 @@ def game_handle_input(state):
                 if not validate_move(state["board"], state["player_position"], state["player_rotation"], state["player_piece"]): state["player_rotation"] = old_rotation
 
             elif event.key == pygame.K_DOWN:
-                state["player_position"][1] += 1
-                if not validate_move(state["board"], state["player_position"], state["player_rotation"], state["player_piece"]): state["player_position"][1] -= 1
+                state["player_falling"] = True
+#                state["player_position"][1] += 1
+#                if not validate_move(state["board"], state["player_position"], state["player_rotation"], state["player_piece"]): state["player_position"][1] -= 1
 
             elif event.key == pygame.K_LEFT:
                 state["player_position"][0] -= 1
@@ -142,23 +186,28 @@ def game_handle_input(state):
                 state["player_position"][0] += 1
                 if not validate_move(state["board"], state["player_position"], state["player_rotation"], state["player_piece"]): state["player_position"][0] -= 1
 
-            elif event.key == pygame.K_SPACE:
-                done = False
-#                while not done:
-                #TODO: Auto block falling etc.
+#            elif event.key == pygame.K_SPACE:
+                #TODO: Implement
+
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_DOWN:
+                state["player_falling"] = False
 
 def game_main():
 
     total_time = 0
 
+    dt = 0
+
     state = {
 
         "board": [[0 for x in range(0, COLUMNS)] for y in range(0, ROWS)],
-        "dt": 0,
         "total_time": 0,
         "player_position": [5,0],
-        "player_piece": piece_square,
+        "player_piece": select_piece(),
         "player_rotation": 0,
+        "player_falling": False,
+        "falling_timer": 0.0,
     }
 
 #    state["board"][9][19] = 1
@@ -167,7 +216,10 @@ def game_main():
         t = time.time()
         time.sleep(1/30)
         game_handle_input(state)
-        game_update(state)
-        state["dt"] = time.time() - t
+        game_update(state, dt)
+        dt = time.time() - t
+
+#for piece in PIECES:
+#    print(piece)
 
 game_main()
