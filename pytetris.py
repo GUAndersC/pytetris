@@ -72,8 +72,9 @@ PIECES = [
     ]
 
 def select_piece():
+    """ :: -> Piece
+    Returns a random piece. """
     return PIECES[random.randint(0, len(PIECES) - 1)]
-#    return PIECES[2]
 
 def draw_board(screen, block_sprite, board):
     """ :: Surface -> Sprite -> Board -> ()
