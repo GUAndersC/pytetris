@@ -91,15 +91,16 @@ def select_piece():
     return PIECES[random.randint(0, len(PIECES) - 1)]
 #    return PIECES[2]
 
-def draw_board(board):
+def draw_board(screen, board):
     for y, row in enumerate(board):
       for x, cell in enumerate(row):
+            # TODO: block is global
             new_block = block.copy()
             new_block.fill(board[y][x], None, pygame.BLEND_MULT)
             screen.blit(new_block, [BLOCKSIZE*x + SCREEN_OFFSET_X,BLOCKSIZE*y + SCREEN_OFFSET_Y])
 
 
-def draw_piece(piece, piece_position, player_rotation):
+def draw_piece(screen, piece, piece_position, player_rotation):
     for block_position in piece["rotations"][player_rotation]:
 
         screen.blit(block,
@@ -136,7 +137,7 @@ def try_drop_piece(state):
         remove_full_rows(state)
         spawn_piece(state, select_piece(), [5,0])
 
-def game_update(state, dt):
+def game_update(screen, state, dt):
 
     if not state["player_falling"]:
         state["total_time"] += dt
@@ -158,8 +159,8 @@ def game_update(state, dt):
     player_piece = state["player_piece"]
     player_rotation = state["player_rotation"]
 
-    draw_board(state["board"])
-    draw_piece(player_piece, player_position, player_rotation)
+    draw_board(screen, state["board"])
+    draw_piece(screen, player_piece, player_position, player_rotation)
 
     pygame.display.flip()
 
@@ -218,12 +219,13 @@ def game_main():
     screen = pygame.display.set_mode([640, 480])
 
     block = pygame.image.load("Square.png")
-    background_block = pygame.image.load("SquareGray.png")
+    #background_block = pygame.image.load("SquareGray.png")
 
     total_time = 0
 
     dt = 0
 
+    
     state = {
 
         "board": [[(20,20,20) for x in range(0, COLUMNS)] for y in range(0, ROWS)],
@@ -241,7 +243,7 @@ def game_main():
         t = time.time()
         time.sleep(1/30)
         game_handle_input(state)
-        game_update(state, dt)
+        game_update(screen, state, dt)
         dt = time.time() - t
 
 #for piece in PIECES:
