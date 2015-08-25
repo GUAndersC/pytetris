@@ -44,7 +44,7 @@ PIECES = [
 
         #S1
         {
-            "color": (220, 0, 0),
+            "color": (0, 0, 220),
             "rotations": (
                             ((0,-1), (1,-1), (-1,0), (0,0)),
                             ((0,-1), (0,0), (1,0), (1,1)),
@@ -53,7 +53,7 @@ PIECES = [
 
         #S2
         {
-            "color": (220, 0, 0),
+            "color": (220, 0, 220),
             "rotations": (
                             ((-1,-1), (0,-1), (0,0), (1,0)),
                             ((1,-1), (0,0),(1,0),(0,1)),
@@ -62,7 +62,7 @@ PIECES = [
 
         #Square
         {
-            "color": (220, 0, 0),
+            "color": (220, 220, 0),
             "rotations": (
                             ((0,0), (1,0), (0,1), (1,1)),
                             ((0,0), (1,0), (0,1), (1,1)),
@@ -92,8 +92,11 @@ def draw_piece(screen, block_sprite, piece, piece_position, player_rotation):
     Draws the piece, using the sprite, at the position,
     using the rotation, on the surface. """
 
+    new_block = block_sprite.copy()
+    new_block.fill(piece["color"], None, pygame.BLEND_MULT)
+
     for block_position in piece["rotations"][player_rotation]:
-        screen.blit(block_sprite,
+        screen.blit(new_block,
                             [BLOCKSIZE*(block_position[0]+piece_position[0]) + SCREEN_OFFSET_X,
                             (BLOCKSIZE*(block_position[1]+piece_position[1]) + SCREEN_OFFSET_Y)
                             ]
