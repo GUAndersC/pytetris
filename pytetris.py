@@ -107,8 +107,14 @@ def spawn_piece(state, piece, position):
     state["player_position"] = position
     state["player_rotation"] = 0
 
-def add_blocks_to_board(board, position, rotation, piece):
-    # TODO: This function also gives points; pass 'state'!
+def add_blocks_to_board(state):
+    """ :: GameState -> ()
+    Adds player piece to board. """
+    board = state["board"]
+    position = state["player_position"]
+    rotation = state["player_rotation"]
+    piece = state["player_piece"]
+
     for block in piece["rotations"][rotation]:
         board[position[1]+block[1]][position[0]+block[0]] = piece["color"]
 
@@ -130,7 +136,7 @@ def try_drop_piece(state):
 
     if not validate_move(state["board"], state["player_position"], state["player_rotation"], state["player_piece"]):
         state["player_position"][1] -= 1
-        add_blocks_to_board(state["board"], state["player_position"], state["player_rotation"], state["player_piece"])
+        add_blocks_to_board(state)
         remove_full_rows(state)
         spawn_piece(state, select_piece(), [5,0])
 
@@ -140,7 +146,6 @@ def game_update(state, dt):
 
     if not state["player_falling"]:
         state["total_time"] += dt
-
 
     if state["total_time"] > 1.0 and state["player_falling"] == False:
         try_drop_piece(state)
