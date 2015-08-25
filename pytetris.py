@@ -126,7 +126,7 @@ def remove_full_rows(state):
     for i, row in enumerate(board):
         if all([block > 0 for block in row]):
             del board[i]
-            board.insert(0, [0 for _ in range(0, COLUMNS)])
+            board.insert(0, [(20,20,20) for _ in range(0, COLUMNS)])
 
 def try_drop_piece(state):
     """ :: GameState -> ()
@@ -184,7 +184,7 @@ def validate_move(board, position, rotation, piece):
         if (x >= COLUMNS or x < 0) or (y >= ROWS or y < 0):
             return False
 
-        if board[y][x] != 0:
+        if board[y][x] != (20,20,20):
             return False
 
     return True
