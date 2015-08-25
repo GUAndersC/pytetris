@@ -1,29 +1,13 @@
 import sys, pygame, random
 import time
 
-
-#block.fill((0,220,0), None, pygame.BLEND_MULT)
-
-#tint = pygame.Surface((16,16))
-#tint.fill((0,50,0), pygame.BLEND_ADD)
-
-#rect = block.get_rect()
-
-#block = pygame.Surface((16,16))
-
-#block.fill((255,0,255), None, pygame.BLEND_ADD)
-
 BLOCKSIZE = 16
-
 SCREEN_OFFSET_X = 240
 SCREEN_OFFSET_Y = 80
-
 rowsize = 640 / 16
 colsize = 480 / 16
-
 ROWS = 20
 COLUMNS = 10
-
 PIECES = [
 
         #T
@@ -92,6 +76,8 @@ def select_piece():
 #    return PIECES[2]
 
 def draw_board(screen, block_sprite, board):
+    """ :: Surface -> Sprite -> Board -> ()
+    Draws the board using the sprite on the surface. """
     for y, row in enumerate(board):
       for x, cell in enumerate(row):
             # TODO: block is global
@@ -101,8 +87,11 @@ def draw_board(screen, block_sprite, board):
 
 
 def draw_piece(screen, block_sprite, piece, piece_position, player_rotation):
-    for block_position in piece["rotations"][player_rotation]:
+    """ :: Surface -> Sprite -> Piece -> Position -> Rotation -> ()
+    Draws the piece, using the sprite, at the position,
+    using the rotation, on the surface. """
 
+    for block_position in piece["rotations"][player_rotation]:
         screen.blit(block_sprite,
                             [BLOCKSIZE*(block_position[0]+piece_position[0]) + SCREEN_OFFSET_X,
                             (BLOCKSIZE*(block_position[1]+piece_position[1]) + SCREEN_OFFSET_Y)
@@ -110,17 +99,21 @@ def draw_piece(screen, block_sprite, piece, piece_position, player_rotation):
                     )
 
 def spawn_piece(state, piece, position):
+    """ :: GameState -> Piece -> Vector -> ()
+    Adds the specified piece to the game state at the specified position"""
 
     state["player_piece"] = piece
     state["player_position"] = position
     state["player_rotation"] = 0
 
 def add_blocks_to_board(board, position, rotation, piece):
-
+    # TODO: This function also gives points; pass 'state'!
     for block in piece["rotations"][rotation]:
         board[position[1]+block[1]][position[0]+block[0]] = piece["color"]
 
 def remove_full_rows(state):
+    """ :: GameState -> ()
+    Removes full rows in board TODO: and grants user some points. """
     board = state["board"]
 
     for i, row in enumerate(board):
@@ -129,6 +122,9 @@ def remove_full_rows(state):
             board.insert(0, [0 for _ in range(0, COLUMNS)])
 
 def try_drop_piece(state):
+    """ :: GameState -> ()
+    Move player piece down one step if possible. """
+
     state["player_position"][1] += 1
 
     if not validate_move(state["board"], state["player_position"], state["player_rotation"], state["player_piece"]):
@@ -138,6 +134,8 @@ def try_drop_piece(state):
         spawn_piece(state, select_piece(), [5,0])
 
 def game_update(state, dt):
+    """ :: GameState -> TimeDelta -> ()
+    Updates game state based on game rules (Does "physics") """
 
     if not state["player_falling"]:
         state["total_time"] += dt
@@ -155,6 +153,8 @@ def game_update(state, dt):
 
 
 def game_draw(screen, block_sprite, state):
+    """ :: ScreenSurface -> Sprite -> GameState -> ()
+    Draws game onto screen """
     screen.fill([0,0,0])
 
     player_position = state["player_position"]
@@ -168,6 +168,8 @@ def game_draw(screen, block_sprite, state):
 
 
 def validate_move(board, position, rotation, piece):
+    """ :: Board -> Position -> Rotation -> Piece -> Boolean
+    Is current state of the board valid? """
 
     for coord in piece["rotations"][rotation]:
         x = coord[0] + position[0]
@@ -182,6 +184,9 @@ def validate_move(board, position, rotation, piece):
     return True
 
 def game_handle_input(state):
+    """ :: GameState -> ()
+    Handles user input """
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT: sys.exit()
 
@@ -196,8 +201,6 @@ def game_handle_input(state):
 
             elif event.key == pygame.K_DOWN:
                 state["player_falling"] = True
-#                state["player_position"][1] += 1
-#                if not validate_move(state["board"], state["player_position"], state["player_rotation"], state["player_piece"]): state["player_position"][1] -= 1
 
             elif event.key == pygame.K_LEFT:
                 state["player_position"][0] -= 1
@@ -207,8 +210,8 @@ def game_handle_input(state):
                 state["player_position"][0] += 1
                 if not validate_move(state["board"], state["player_position"], state["player_rotation"], state["player_piece"]): state["player_position"][0] -= 1
 
-#            elif event.key == pygame.K_SPACE:
-                #TODO: Implement
+            elif event.key == pygame.K_SPACE:
+                pass
 
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_DOWN:
