@@ -251,7 +251,7 @@ def game_handle_input(state):
         if event.type == pygame.QUIT: sys.exit()
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE: sys.exit()
+            if event.key == pygame.K_ESCAPE: state["playing"] = False
 
             elif event.key == pygame.K_UP:
                 n_rotations = len(state["player_piece"]["rotations"])
@@ -342,6 +342,8 @@ def menu_screen(text, screen):
             if event.type == pygame.QUIT: sys.exit()
 
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE: sys.exit()
+
                 return
 
 
