@@ -9,7 +9,7 @@ colsize = 480 / 16
 ROWS = 20
 COLUMNS = 10
 
-ROWS_PER_LEVEL = 2
+ROWS_PER_LEVEL = 10
 
 GAME_SPEED = 1.0
 
