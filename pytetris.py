@@ -102,7 +102,18 @@ def draw_board(screen, block_sprite, board):
             screen.blit(new_block, [BLOCKSIZE*x + SCREEN_OFFSET_X,BLOCKSIZE*y + SCREEN_OFFSET_Y])
 
 
-def draw_piece(screen, block_sprite, piece, piece_position, player_rotation):
+def draw_piece(screen, block_sprite, piece, position, rotation):
+    new_block = block_sprite.copy()
+    new_block.fill(piece["color"], None, pygame.BLEND_MULT)
+
+    for block_position in piece["rotations"][rotation]:
+        screen.blit(new_block,
+                            [BLOCKSIZE*(block_position[0]+position[0]) + SCREEN_OFFSET_X,
+                            (BLOCKSIZE*(block_position[1]+position[1]) + SCREEN_OFFSET_Y)
+                            ]
+                    )
+
+def draw_piece_bounded(screen, block_sprite, piece, position, rotation):
     """ :: Surface -> Sprite -> Piece -> Position -> Rotation -> ()
     Draws the piece, using the sprite, at the position,
     using the rotation, on the surface. """
@@ -110,11 +121,11 @@ def draw_piece(screen, block_sprite, piece, piece_position, player_rotation):
     new_block = block_sprite.copy()
     new_block.fill(piece["color"], None, pygame.BLEND_MULT)
 
-    for block_position in piece["rotations"][player_rotation]:
-        if(block_position[1]+piece_position[1] >= 0):
+    for block_position in piece["rotations"][rotation]:
+        if(block_position[1]+position[1] >= 0):
             screen.blit(new_block,
-                                [BLOCKSIZE*(block_position[0]+piece_position[0]) + SCREEN_OFFSET_X,
-                                (BLOCKSIZE*(block_position[1]+piece_position[1]) + SCREEN_OFFSET_Y)
+                                [BLOCKSIZE*(block_position[0]+position[0]) + SCREEN_OFFSET_X,
+                                (BLOCKSIZE*(block_position[1]+position[1]) + SCREEN_OFFSET_Y)
                                 ]
                         )
 
@@ -184,7 +195,8 @@ def try_drop_piece_and_remove(state):
     if not try_drop_piece(state):
         add_blocks_to_board(state)
         remove_full_rows(state)
-        spawn_piece(state, select_piece(), [5,0])
+        spawn_piece(state, state["next_piece"], [5,0])
+        state["next_piece"] = select_piece()
 
 def game_update(state, dt):
     """ :: GameState -> TimeDelta -> ()
@@ -202,7 +214,8 @@ def game_update(state, dt):
             state["player_dropping"] = False
             add_blocks_to_board(state)
             remove_full_rows(state)
-            spawn_piece(state, select_piece(), [5,0])
+            spawn_piece(state, state["next_piece"], [5,0])
+            state["next_piece"] = select_piece()
 
     if state["player_falling"]:
         state["falling_timer"] += dt
@@ -226,7 +239,8 @@ def game_draw(screen, block_sprite, state):
     player_rotation = state["player_rotation"]
 
     draw_board(screen, block_sprite, state["board"])
-    draw_piece(screen, block_sprite, player_piece, player_position, player_rotation)
+    draw_piece_bounded(screen, block_sprite, player_piece, player_position, player_rotation)
+    draw_piece(screen, block_sprite, state["next_piece"], (12, 8), 0)
 
 def validate_move(board, position, rotation, piece):
     """ :: Board -> Position -> Rotation -> Piece -> Boolean
@@ -295,6 +309,7 @@ def game_main(screen):
         "total_time": 0,
         "player_position": [5,0],
         "player_piece": select_piece(),
+        "next_piece": select_piece(),
         "player_rotation": 0,
         "player_falling": False,
         "player_dropping": False,
@@ -315,6 +330,7 @@ def game_main(screen):
         level_text = "Level: " + str(state["level"])
         score_label = game_font.render(score_text, 1, (255,0,255))
         level_label = game_font.render(level_text, 1, (255, 0, 255))
+        next_label = game_font.render("Next:", 1, (255, 0, 255))
         t = time.time()
         time.sleep(1/30)
         game_handle_input(state)
@@ -323,6 +339,7 @@ def game_main(screen):
         game_draw(screen, block, state)
         screen.blit(score_label, (420, 100))
         screen.blit(level_label, (420, 84))
+        screen.blit(next_label, (420, 192))
         pygame.display.flip()
         dt = time.time() - t
 
