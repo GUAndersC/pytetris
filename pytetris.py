@@ -1,5 +1,5 @@
 import sys, pygame, random
-import time
+import time, math
 
 BLOCKSIZE = 16
 SCREEN_OFFSET_X = 240
@@ -8,6 +8,10 @@ rowsize = 640 / 16
 colsize = 480 / 16
 ROWS = 20
 COLUMNS = 10
+
+PARTICLE_SPEED_MULTIPLIER = 600
+PARTICLE_SLOWDOWN_FACTOR = 0.995
+PARTICLE_FADE_FACTOR = 0.995
 
 ROWS_PER_LEVEL = 10
 
@@ -171,11 +175,24 @@ def remove_full_rows(state):
 
     for i, row in enumerate(board):
         if all([block != (20, 20, 20) for block in row]):
+            rows_removed += 1
+            for j, block in enumerate(board[i]):
+
+                angle = random.random() * 2 * math.pi
+
+                velocity = [math.cos(angle) * PARTICLE_SPEED_MULTIPLIER,math.sin(angle) * PARTICLE_SPEED_MULTIPLIER]
+
+                particle = {
+                                "position": [j * BLOCKSIZE + SCREEN_OFFSET_X, i * BLOCKSIZE + SCREEN_OFFSET_Y],
+                                "color":    block,
+                                "velocity": velocity,
+                                "alpha": 255.0,
+                }
+
+                state["particles"].append(particle)
             del board[i]
             board.insert(0, [(20,20,20) for _ in range(0, COLUMNS)])
-            rows_removed += 1
-
-
+#            rows_removed += 1
     state["row_count"] += rows_removed
     calculate_score(rows_removed, state)
 
@@ -240,7 +257,7 @@ def game_draw(screen, block_sprite, state):
 
     draw_board(screen, block_sprite, state["board"])
     draw_piece_bounded(screen, block_sprite, player_piece, player_position, player_rotation)
-    draw_piece(screen, block_sprite, state["next_piece"], (12, 8), 0)
+    draw_piece(screen, block_sprite, state["next_piece"], (12, 9), 0)
 
 def validate_move(board, position, rotation, piece):
     """ :: Board -> Position -> Rotation -> Piece -> Boolean
@@ -291,6 +308,23 @@ def game_handle_input(state):
             if event.key == pygame.K_DOWN:
                 state["player_falling"] = False
 
+def draw_particles(screen, dt, sprite, particles):
+    for particle in particles:
+        block = sprite.copy()
+        block.fill(particle["color"], None, pygame.BLEND_MULT)
+        block.set_alpha(particle["alpha"])
+        screen.blit(block, particle["position"])
+#        particle["alpha"] = (particle["alpha"] - 1) % 255
+        particle["position"][0] += particle["velocity"][0] * dt
+        particle["position"][1] += particle["velocity"][1] * dt
+
+        particle["velocity"][0] *= PARTICLE_SLOWDOWN_FACTOR
+        particle["velocity"][1] *= PARTICLE_SLOWDOWN_FACTOR
+        particle["velocity"][1] += ((9.82 * dt) * 50)
+
+        particle["alpha"] *= PARTICLE_FADE_FACTOR
+
+    particles = [particle for particle in particles if particle["alpha"] > 0.0001]
 def game_main(screen):
     game_font = pygame.font.Font(None, 18)
 
@@ -315,6 +349,10 @@ def game_main(screen):
         "player_dropping": False,
         "falling_timer": 0.0,
 
+        "shake": 0.5,
+
+        "particles": [],
+
         "row_count": 0,
 
         "level": 0,
@@ -336,7 +374,11 @@ def game_main(screen):
         game_handle_input(state)
 
         game_update(state, dt)
+
         game_draw(screen, block, state)
+
+        draw_particles(screen, dt, block, state["particles"])
+
         screen.blit(score_label, (420, 100))
         screen.blit(level_label, (420, 84))
         screen.blit(next_label, (420, 192))
