@@ -12,6 +12,7 @@ COLUMNS = 10
 PARTICLE_SPEED_MULTIPLIER = 600
 PARTICLE_SLOWDOWN_FACTOR = 0.995
 PARTICLE_FADE_FACTOR = 0.995
+PARTICLE_VELOCITY_MOD = 0.5
 
 ROW_SHAKE = 30
 
@@ -179,19 +180,19 @@ def remove_full_rows(state):
         if all([block != (20, 20, 20) for block in row]):
             rows_removed += 1
             for j, block in enumerate(board[i]):
-
-                angle = random.random() * 2 * math.pi
-
-                velocity = [math.cos(angle) * PARTICLE_SPEED_MULTIPLIER,math.sin(angle) * PARTICLE_SPEED_MULTIPLIER]
-
-                particle = {
-                                "position": [j * BLOCKSIZE + SCREEN_OFFSET_X, i * BLOCKSIZE + SCREEN_OFFSET_Y],
-                                "color":    block,
-                                "velocity": velocity,
-                                "alpha": 255.0,
-                }
-
-                state["particles"].append(particle)
+                for k in range(1, 4):
+                    speed = PARTICLE_SPEED_MULTIPLIER + random.random() * PARTICLE_VELOCITY_MOD
+                    angle = random.random() * 2 * math.pi
+                    velocity = [math.cos(angle) * speed, math.sin(angle) * speed]
+                    particle = {
+                                    "position": [j * BLOCKSIZE + SCREEN_OFFSET_X, i * BLOCKSIZE + SCREEN_OFFSET_Y],
+                                    "color":    block,
+                                    "velocity": velocity,
+                                    "alpha": 255.0,
+                                    "rotation": 0,
+                                    "angular_momentum": random.random() * 400
+                    }
+                    state["particles"].append(particle)
             del board[i]
             state["shake_magnitude"] += ROW_SHAKE * rows_removed
             board.insert(0, [(20,20,20) for _ in range(0, COLUMNS)])
@@ -316,6 +317,7 @@ def draw_particles(screen, dt, sprite, particles):
         block = sprite.copy()
         block.fill(particle["color"], None, pygame.BLEND_MULT)
         block.set_alpha(particle["alpha"])
+        block = pygame.transform.rotate(block, particle["rotation"])
         screen.blit(block, particle["position"])
 #        particle["alpha"] = (particle["alpha"] - 1) % 255
         particle["position"][0] += particle["velocity"][0] * dt
@@ -326,6 +328,7 @@ def draw_particles(screen, dt, sprite, particles):
         particle["velocity"][1] += ((9.82 * dt) * 50)
 
         particle["alpha"] *= PARTICLE_FADE_FACTOR
+        particle["rotation"] = (particle["rotation"] + (particle["angular_momentum"] * dt)) % 360
 
     particles = [particle for particle in particles if particle["alpha"] > 0.0001]
 def game_main(screen):
@@ -337,6 +340,8 @@ def game_main(screen):
     # Time management
     total_time = 0
     dt = 0
+
+    shake_timeout = time.time()
 
     # Game state
     state = {
@@ -387,8 +392,10 @@ def game_main(screen):
         screen.blit(level_label, (420, 84))
         screen.blit(next_label, (420, 192))
 
-        state["shake_offset"][0] = random.random() * state["shake_magnitude"]
-        state["shake_offset"][1] = random.random() * state["shake_magnitude"]
+        if time.time() > shake_timeout + 0.02:
+            state["shake_offset"][0] = random.random() * state["shake_magnitude"]
+            state["shake_offset"][1] = random.random() * state["shake_magnitude"]
+            shake_timeout = time.time()
 
         state["shake_magnitude"] *= 0.99
 
