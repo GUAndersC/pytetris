@@ -13,6 +13,8 @@ PARTICLE_SPEED_MULTIPLIER = 600
 PARTICLE_SLOWDOWN_FACTOR = 0.995
 PARTICLE_FADE_FACTOR = 0.995
 
+ROW_SHAKE = 30
+
 ROWS_PER_LEVEL = 10
 
 GAME_SPEED = 1.0
@@ -96,28 +98,28 @@ def select_piece():
     Returns a random piece. """
     return PIECES[random.randint(0, len(PIECES) - 1)]
 
-def draw_board(screen, block_sprite, board):
+def draw_board(screen, block_sprite, board, shake_offset):
     """ :: Surface -> Sprite -> Board -> ()
     Draws the board using the sprite on the surface. """
     for y, row in enumerate(board):
       for x, cell in enumerate(row):
             new_block = block_sprite.copy()
             new_block.fill(board[y][x], None, pygame.BLEND_MULT)
-            screen.blit(new_block, [BLOCKSIZE*x + SCREEN_OFFSET_X,BLOCKSIZE*y + SCREEN_OFFSET_Y])
+            screen.blit(new_block, [BLOCKSIZE*x + SCREEN_OFFSET_X + shake_offset[0], BLOCKSIZE*y + SCREEN_OFFSET_Y + shake_offset[1]])
 
 
-def draw_piece(screen, block_sprite, piece, position, rotation):
+def draw_piece(screen, block_sprite, piece, position, rotation, shake_offset):
     new_block = block_sprite.copy()
     new_block.fill(piece["color"], None, pygame.BLEND_MULT)
 
     for block_position in piece["rotations"][rotation]:
         screen.blit(new_block,
-                            [BLOCKSIZE*(block_position[0]+position[0]) + SCREEN_OFFSET_X,
-                            (BLOCKSIZE*(block_position[1]+position[1]) + SCREEN_OFFSET_Y)
+                            [BLOCKSIZE*(block_position[0]+position[0]) + SCREEN_OFFSET_X + shake_offset[0],
+                            (BLOCKSIZE*(block_position[1]+position[1]) + SCREEN_OFFSET_Y + shake_offset[1])
                             ]
                     )
 
-def draw_piece_bounded(screen, block_sprite, piece, position, rotation):
+def draw_piece_bounded(screen, block_sprite, piece, position, rotation, shake_offset):
     """ :: Surface -> Sprite -> Piece -> Position -> Rotation -> ()
     Draws the piece, using the sprite, at the position,
     using the rotation, on the surface. """
@@ -128,8 +130,8 @@ def draw_piece_bounded(screen, block_sprite, piece, position, rotation):
     for block_position in piece["rotations"][rotation]:
         if(block_position[1]+position[1] >= 0):
             screen.blit(new_block,
-                                [BLOCKSIZE*(block_position[0]+position[0]) + SCREEN_OFFSET_X,
-                                (BLOCKSIZE*(block_position[1]+position[1]) + SCREEN_OFFSET_Y)
+                                [BLOCKSIZE*(block_position[0]+position[0]) + SCREEN_OFFSET_X + shake_offset[0],
+                                (BLOCKSIZE*(block_position[1]+position[1]) + SCREEN_OFFSET_Y + shake_offset[1])
                                 ]
                         )
 
@@ -191,6 +193,7 @@ def remove_full_rows(state):
 
                 state["particles"].append(particle)
             del board[i]
+            state["shake_magnitude"] += ROW_SHAKE * rows_removed
             board.insert(0, [(20,20,20) for _ in range(0, COLUMNS)])
 #            rows_removed += 1
     state["row_count"] += rows_removed
@@ -255,9 +258,9 @@ def game_draw(screen, block_sprite, state):
     player_piece = state["player_piece"]
     player_rotation = state["player_rotation"]
 
-    draw_board(screen, block_sprite, state["board"])
-    draw_piece_bounded(screen, block_sprite, player_piece, player_position, player_rotation)
-    draw_piece(screen, block_sprite, state["next_piece"], (12, 9), 0)
+    draw_board(screen, block_sprite, state["board"], state["shake_offset"])
+    draw_piece_bounded(screen, block_sprite, player_piece, player_position, player_rotation, state["shake_offset"])
+    draw_piece(screen, block_sprite, state["next_piece"], (12, 9), 0, (0,0))
 
 def validate_move(board, position, rotation, piece):
     """ :: Board -> Position -> Rotation -> Piece -> Boolean
@@ -349,7 +352,8 @@ def game_main(screen):
         "player_dropping": False,
         "falling_timer": 0.0,
 
-        "shake": 0.5,
+        "shake_magnitude": 0.0,
+        "shake_offset": [5.0, 5.0],
 
         "particles": [],
 
@@ -382,6 +386,12 @@ def game_main(screen):
         screen.blit(score_label, (420, 100))
         screen.blit(level_label, (420, 84))
         screen.blit(next_label, (420, 192))
+
+        state["shake_offset"][0] = random.random() * state["shake_magnitude"]
+        state["shake_offset"][1] = random.random() * state["shake_magnitude"]
+
+        state["shake_magnitude"] *= 0.99
+
         pygame.display.flip()
         dt = time.time() - t
 
@@ -404,7 +414,6 @@ def menu_screen(text, screen):
                 if event.key == pygame.K_ESCAPE: sys.exit()
 
                 return
-
 
 def game():
 
