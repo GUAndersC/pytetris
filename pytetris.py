@@ -1,6 +1,9 @@
 import sys, pygame, random
 import time, math
 
+#TODO: Use dt everywhere
+#TODO: Scale particles
+
 BLOCKSIZE = 16
 SCREEN_OFFSET_X = 240
 SCREEN_OFFSET_Y = 80
@@ -12,9 +15,9 @@ COLUMNS = 10
 PARTICLE_SPEED_MULTIPLIER = 600
 PARTICLE_SLOWDOWN_FACTOR = 0.995
 PARTICLE_FADE_FACTOR = 0.995
-PARTICLE_VELOCITY_MOD = 0.5
 
-ROW_SHAKE = 30
+ROW_SHAKE = 20
+DROP_SHAKE = 7
 
 ROWS_PER_LEVEL = 10
 
@@ -181,20 +184,20 @@ def remove_full_rows(state):
             rows_removed += 1
             for j, block in enumerate(board[i]):
                 for k in range(1, 4):
-                    speed = PARTICLE_SPEED_MULTIPLIER + random.random() * PARTICLE_VELOCITY_MOD
+                    speed = PARTICLE_SPEED_MULTIPLIER * random.random()
                     angle = random.random() * 2 * math.pi
                     velocity = [math.cos(angle) * speed, math.sin(angle) * speed]
                     particle = {
                                     "position": [j * BLOCKSIZE + SCREEN_OFFSET_X, i * BLOCKSIZE + SCREEN_OFFSET_Y],
                                     "color":    block,
                                     "velocity": velocity,
-                                    "alpha": 255.0,
+                                    "alpha": 170.0,
                                     "rotation": 0,
                                     "angular_momentum": random.random() * 400
                     }
                     state["particles"].append(particle)
             del board[i]
-            state["shake_magnitude"] += ROW_SHAKE * rows_removed
+            state["shake_magnitude"] = max(state["shake_magnitude"] + ROW_SHAKE * rows_removed, 60)
             board.insert(0, [(20,20,20) for _ in range(0, COLUMNS)])
 #            rows_removed += 1
     state["row_count"] += rows_removed
@@ -237,6 +240,7 @@ def game_update(state, dt):
             remove_full_rows(state)
             spawn_piece(state, state["next_piece"], [5,0])
             state["next_piece"] = select_piece()
+            state["shake_magnitude"] += DROP_SHAKE
 
     if state["player_falling"]:
         state["falling_timer"] += dt
@@ -396,8 +400,7 @@ def game_main(screen):
             state["shake_offset"][0] = random.random() * state["shake_magnitude"]
             state["shake_offset"][1] = random.random() * state["shake_magnitude"]
             shake_timeout = time.time()
-
-        state["shake_magnitude"] *= 0.99
+            state["shake_magnitude"] *= 0.93
 
         pygame.display.flip()
         dt = time.time() - t
